@@ -1,0 +1,25 @@
+{
+  "name": "bismuth-js-crypto",
+  "version": "1.0.0",
+  "description": "",
+  "main": "browser_crypto.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabidi/bismuth_js_crypto.git"
+  },
+  "dependencies": {
+    "jsencrypt": "git@github.com:gabidi/jsencrypt.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gabidi/bismuth_js_crypto/issues"
+  },
+  "homepage": "https://github.com/gabidi/bismuth_js_crypto#readme"
+}
