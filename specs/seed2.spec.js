@@ -56,6 +56,7 @@ it('Should be able to generate entropy using user data and generate mixed BIP39 
   expect(seed.length).to.be.equal(32)
   const twelveWords = bip39.entropyToMnemonic(seed)
   expect(twelveWords.split(' ').length).to.be.equal(12)
+  return twelveWords
 }).timeout(30000)
 it('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it', async () => {
   const mnemonic = {
@@ -89,7 +90,10 @@ it('Should be able to take an mnemonic seed and make an RSA key and BIS address 
     )
   })
   expect(arc4Spy.called).to.be.true
-  expect(forge.pki.privateKeyToPem(privateKey)).to.be.contain('BEGIN PRIVATE KEY')
+  expect(forge.pki.privateKeyToPem(privateKey)).to.be.contain(
+    'BEGIN PRIVATE KEY'
+  )
   expect(forge.pki.publicKeyToPem(publicKey)).to.be.contain('BEGIN PUBLIC KEY')
   const bisAddress = sha224(forge.pki.publicKeyToPem(publicKey))
+  return bisAddress
 }).timeout(360000)
