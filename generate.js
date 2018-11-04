@@ -1,29 +1,32 @@
-const _Crypto = require('./lib/cryptojs')
-const _SecureRandom = require('./lib/secureRandom')
-const { JSEncrypt } = require('./lib/jsencrypt/src/')
+const forge = require('node-forge')
+const { sha224 } = require('./lib/cryptoUtils')()
+const _arc4 = require('./lib/arc4')
 module.exports = ({
-  Crypto = _Crypto(),
-  secureRandom = _SecureRandom({ Crypto }),
-  keySize = 4096,
-  crypt = new JSEncrypt({
-    default_key_size: keySize,
-    secureRandom: secureRandom
-  })
+  prng = _arc4(),
+  generateKeyPair = forge.pki.rsa.generateKeyPair
 } = {}) => {
-  const generateKeys = async () => {
-    let dt = new Date()
-    let time = -dt.getTime()
+  // prime prng by desposing first 300
+  for (let i = 1; i <= 300; i++) prng.next()
 
-    return new Promise((resolve, reject) => {
-      crypt.getKey(() => {
-        dt = new Date()
-        time += dt.getTime()
-        const privKey = crypt.getPrivateKey()
-        const pubKey = crypt.getPublicKey()
-        const address = Crypto.SHA224(crypt.getPublicKey()) // , { asBytes: true }
-        return resolve({ address, pubKey, privKey, genTime: time })
-      })
+  const generateKeys = async ({ bits = 4096 } = {}) => {
+    const { privateKey, publicKey } = await new Promise((res, rej) => {
+      generateKeyPair(
+        {
+          prng: {
+            getBytesSync: prng.nextBytesAsString
+          },
+          bits,
+          workers: 4
+        },
+        (err, key) => (err ? rej(err) : res(key))
+      )
     })
+    const pemPublic = forge.pki.publicKeyToPem(publicKey)
+    return {
+      privateKey: forge.pki.privateKeyToPem(privateKey),
+      publicKey: pemPublic,
+      address: sha224(pemPublic)
+    }
   }
   return { generateKeys }
 }

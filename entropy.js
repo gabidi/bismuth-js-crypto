@@ -13,7 +13,7 @@ module.exports = ({ secureRandom = _secureRandom() } = {}) => {
   let lastInputTime = new Date().getTime()
   let isStillSeeding = true
   // seed function exists to wait for mouse movement to add more entropy before generating an address
-  const entropyFromCoordinates = ({ clientX, clientY }) => {
+  const seedFromMouseMovementEvent = ({ clientX, clientY }) => {
     const timeStamp = new Date().getTime()
     // seeding is over now we generate and display the address
     if (seedCount === seedLimit) {
@@ -26,12 +26,12 @@ module.exports = ({ secureRandom = _secureRandom() } = {}) => {
       secureRandom.seedInt16(clientX * clientY)
       seedCount++
       lastInputTime = new Date().getTime()
-      updateEntropyStats()
+      updateSeedStats()
     }
   }
 
   // seed function exists to wait for mouse movement to add more entropy before generating an address
-  const entropyFromKeyPress = evt => {
+  const seedFromKeyPress = evt => {
     // seeding is over now we generate and display the address
     if (seedCount === seedLimit) {
       seedCount++
@@ -47,13 +47,13 @@ module.exports = ({ secureRandom = _secureRandom() } = {}) => {
       secureRandom.seedInt8(keyPressTimeDiff)
       seedCount++
       lastInputTime = new Date().getTime()
-      updateEntropyStats()
+      updateSeedStats()
     }
   }
 
   let poolHex, percentSeeded
 
-  const updateEntropyStats = function () {
+  const updateSeedStats = function () {
     if (secureRandom.poolCopyOnInit != null) {
       poolHex = util.bytesToHex(secureRandom.poolCopyOnInit)
     } else {
@@ -70,8 +70,8 @@ module.exports = ({ secureRandom = _secureRandom() } = {}) => {
   const getPoolHex = () => poolHex
   const getPoolSha256 = () => seedingDone() && sha256(secureRandom.pool)
   return {
-    entropyFromCoordinates,
-	  entropyFromKeyPress,
+    seedFromMouseMovementEvent,
+    seedFromKeyPress,
     seedingDone,
     getPoolHex,
     getSeedingPercent,

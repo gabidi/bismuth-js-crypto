@@ -1,13 +1,14 @@
 const crypto = require('crypto')
 const _secureRandom = require('../lib/secureRandom')
 const _seed = require('../seed')
+const _entropy = require('../entropy')
+const _generate = require('../generate')
 const bip39 = require('bip39')
-const sha256 = require('sha256')
 const _arc4 = require('../lib/arc4')
 const forge = require('node-forge')
 const { expect } = require('chai')
 const { spy } = require('sinon')
-it('BIP 39 should generates the same seed/12 word seed result as python', async () => {
+xit('BIP 39 should generates the same seed/12 word seed result as python', async () => {
   [
     {
       index: 0,
@@ -34,66 +35,84 @@ it('BIP 39 should generates the same seed/12 word seed result as python', async 
     )
   })
 })
-it('Should be able to generate entropy using user data and generate mixed BIP39 mnemonic', async () => {
+xit('Should be able to generate entropy using user data', async () => {
   const secureRandom = _secureRandom({
     entropyStr: 'test',
     crypto
   })
-  const seeder = _seed({
+  const entropy = _entropy({
     secureRandom
   })
-  secureRandom.seedTime()
-  while (!seeder.seedingDone()) {
+  while (!entropy.seedingDone()) {
     // Fake Random mouse
-    seeder.seedFromMouseMovementEvent({
+    entropy.seedFromMouseMovementEvent({
       XClient: Math.floor(Math.random() * 800),
       YClient: Math.floor(Math.random() * 600)
     })
     await new Promise(resolve => setTimeout(resolve, 50))
   }
   expect(secureRandom.pool.length).to.be.at.least(256)
-  const seed = sha256(secureRandom.pool).slice(0, 32)
-  expect(seed.length).to.be.equal(32)
-  const twelveWords = bip39.entropyToMnemonic(seed)
-  expect(twelveWords.split(' ').length).to.be.equal(12)
-  return twelveWords
+  const entropySha = entropy.getPoolSha256()
+  expect(entropySha).to.be.a('String')
+  expect(entropySha.length).to.be.equal(64)
+  console.log(entropySha)
 }).timeout(30000)
-it('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it', async () => {
+
+it('Should be able to make a mnemonic seed from entropy', async () => {
+  // HERE make seed.js FIXE take slice32from sha
+  const entropySha =
+    'd4f5e041a28182e9dbd810fee3375cfbd89bd137dbf95adb68087cf3198b780a'
+  const makeMnemonicFromEntropySha = entropySha => {
+    const twelveWords = bip39.entropyToMnemonic(entropySha.slice(32))
+    return twelveWords
+  }
+  const makeSeededPrngFromMneomic = (twelveWords, passphrase = null) => {
+    //  mix with user passphrase /salet
+    const mnemonic = twelveWords + passphrase ? ` ${passphrase}` : ''
+    const arc4Seed = bip39.mnemonicToSeed(mnemonic)
+    //  feed RC4 as generator function to RSA
+    const prng = _arc4()
+    prng.init(arc4Seed)
+    return prng
+  }
+  const twelveWords = makeMnemonicFromEntropySha(entropySha)
+  expect(twelveWords.split(' ').length).to.be.equal(12)
+  const prng = makeSeededPrngFromMneomic(twelveWords, 'mypass')
+  expect(prng.next()).to.be.a('Number')
+  expect(prng.nextBytesAsString(10).length).to.be.equal(10)
+})
+xit('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it', async () => {
   const mnemonic = {
     index: 0,
     entropy: '3b13f9cb9ddea905883fa8d3ff7b1247',
     twelvewords:
       'deposit panther indicate desert tunnel lizard can vital stadium wink setup moment'
   }
+
+  /// CHANGE THIS TO SEED fns
   //  mix with user passphrase /salet
   const arc4Seed = bip39.mnemonicToSeed(mnemonic + ' mypassphrase')
   //  feed RC4 as generator function to RSA
-  const rng = _arc4()
-  rng.init(arc4Seed)
-  // dispose first 300 bytes
-  for (let i = 1; i <= 300; i++) {
-    expect(rng.next()).to.be.an('Number')
-  }
-  // Set up spy on arc4 next to make sure it gets called by Rsa via nextBytes interface
-  const arc4Spy = spy(rng, 'nextBytesAsString')
-  // Pass it to RSA
-  const { privateKey, publicKey } = await new Promise((res, rej) => {
-    forge.pki.rsa.generateKeyPair(
-      {
-        prng: {
-          getBytesSync: rng.nextBytesAsString
-        },
-        bits: 4096,
-        workers: 4
-      },
-      (err, key) => (err ? rej(err) : res(key))
-    )
+  const prng = _arc4()
+  prng.init(arc4Seed)
+
+  const arc4Spy = spy(prng, 'nextBytesAsString')
+  const arc4SpyNext = spy(prng, 'next')
+  const generateKeyPair = forge.pki.rsa.generateKeyPair
+  const rsaSpy = spy(generateKeyPair)
+  const { generateKeys } = _generate({
+    prng,
+    generateKeyPair
   })
+  // prng should be primed on init
+  expect(arc4SpyNext.callCount).to.equal(300)
+  const { publicKey, privateKey, address } = await generateKeys({
+    bits: 4096
+  })
+  expect(rsaSpy.called).to.be.true
   expect(arc4Spy.called).to.be.true
-  expect(forge.pki.privateKeyToPem(privateKey)).to.be.contain(
-    'BEGIN PRIVATE KEY'
-  )
-  expect(forge.pki.publicKeyToPem(publicKey)).to.be.contain('BEGIN PUBLIC KEY')
-  const bisAddress = sha224(forge.pki.publicKeyToPem(publicKey))
-  return bisAddress
+  expect(privateKey).to.contain('BEGIN RSA PRIVATE KEY')
+  expect(publicKey).to.contain('BEGIN PUBLIC KEY')
+  expect(address.length).to.equal(56)
+  return address
 }).timeout(360000)
