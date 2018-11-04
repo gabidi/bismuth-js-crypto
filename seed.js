@@ -1,80 +1,16 @@
-const sha256 = require('sha256')
-const _secureRandom = require('./lib/secureRandom')
-const { util } = require('./lib/cryptoUtils')()
-module.exports = ({ secureRandom = _secureRandom() } = {}) => {
-  // number of mouse movements to wait for
-  const num = util.randomBytes(12)[11]
-  // return 200 + Math.floor(num);
-  const seedLimit = 50 + Math.floor(num)
-
-  secureRandom.seedTime()
-
-  let seedCount = 0 // counter
-  let lastInputTime = new Date().getTime()
-  let isStillSeeding = true
-  // seed function exists to wait for mouse movement to add more entropy before generating an address
-  const entropyFromCoordinates = ({ clientX, clientY }) => {
-    const timeStamp = new Date().getTime()
-    // seeding is over now we generate and display the address
-    if (seedCount === seedLimit) {
-      seedCount++
-      _seedingOver()
-    }
-    // seed mouse position X and Y when mouse movements are greater than 40ms apart.
-    else if (seedCount < seedLimit && timeStamp - lastInputTime > 40) {
-      secureRandom.seedTime()
-      secureRandom.seedInt16(clientX * clientY)
-      seedCount++
-      lastInputTime = new Date().getTime()
-      updateEntropyStats()
-    }
-  }
-
-  // seed function exists to wait for mouse movement to add more entropy before generating an address
-  const entropyFromKeyPress = evt => {
-    // seeding is over now we generate and display the address
-    if (seedCount === seedLimit) {
-      seedCount++
-      _seedingOver()
-    }
-    // seed key press character
-    else if (seedCount < seedLimit && evt.which) {
-      const timeStamp = new Date().getTime()
-      // seed a bunch (minimum seedLimit) of times
-      secureRandom.seedTime()
-      secureRandom.seedInt8(evt.which)
-      const keyPressTimeDiff = timeStamp - lastInputTime
-      secureRandom.seedInt8(keyPressTimeDiff)
-      seedCount++
-      lastInputTime = new Date().getTime()
-      updateEntropyStats()
-    }
-  }
-
-  let poolHex, percentSeeded
-
-  const updateEntropyStats = function () {
-    if (secureRandom.poolCopyOnInit != null) {
-      poolHex = util.bytesToHex(secureRandom.poolCopyOnInit)
-    } else {
-      poolHex = util.bytesToHex(secureRandom.pool)
-    }
-    percentSeeded = Math.round((seedCount / seedLimit) * 100) + '%'
-  }
-
-  const _seedingOver = () => {
-    isStillSeeding = false
-  }
-  const seedingDone = () => !isStillSeeding
-  const getSeedingPercent = () => percentSeeded
-  const getPoolHex = () => poolHex
-  const getPoolSha256 = () => seedingDone() && sha256(secureRandom.pool)
-  return {
-    entropyFromCoordinates,
-	  entropyFromKeyPress,
-    seedingDone,
-    getPoolHex,
-    getSeedingPercent,
-    getPoolSha256
+const bip39 = require('bip39')
+const _arc4 = require('./lib/arc4')
+module.exports = {
+  makeMnemonicFromEntropySha (entropySha) {
+    return bip39.entropyToMnemonic(entropySha.slice(32))
+  },
+  makeSeededPrngFromMneomic (twelveWords, passphrase = null) {
+    //  mix with user passphrase /salet
+    const mnemonic = twelveWords + passphrase ? ` ${passphrase}` : ''
+    const arc4Seed = bip39.mnemonicToSeed(mnemonic)
+    //  feed RC4 as generator function to RSA
+    const prng = _arc4()
+    prng.init(arc4Seed)
+    return prng
   }
 }
