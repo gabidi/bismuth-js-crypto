@@ -1,5 +1,4 @@
-// entropy
-let entropyStr = ''
+module.export =(entropyStr = '') => {
 // screen size and color depth: ~4.8 to ~5.4 bits
 entropyStr +=
   window.screen.height * window.screen.width * window.screen.colorDepth
@@ -45,3 +44,5 @@ entropyStr += navigator.language
 entropyStr += window.history.length
 // location
 entropyStr += window.location
+  return entropyStr;
+}
