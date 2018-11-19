@@ -1,4 +1,4 @@
-module.export = (entropyStr = '') => {
+module.exports = (entropyStr = '') => {
   // screen size and color depth: ~4.8 to ~5.4 bits
   entropyStr +=
     window.screen.height * window.screen.width * window.screen.colorDepth

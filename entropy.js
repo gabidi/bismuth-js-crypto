@@ -1,7 +1,10 @@
 const sha256 = require('sha256')
 const _secureRandom = require('./lib/secureRandom')
 const { util } = require('./lib/cryptoUtils')()
-module.exports = ({ secureRandom = _secureRandom() } = {}) => {
+module.exports = ({
+  entropySeedString = '',
+  secureRandom = _secureRandom({ entropyStr: entropySeedString })
+} = {}) => {
   // number of mouse movements to wait for
   const num = util.randomBytes(12)[11]
   // return 200 + Math.floor(num);
