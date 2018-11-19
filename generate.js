@@ -15,8 +15,8 @@ module.exports = ({
           prng: {
             getBytesSync: prng.nextBytesAsString
           },
-          bits,
-          workers: 4
+          bits
+          //  workers: 4
         },
         (err, key) => (err ? rej(err) : res(key))
       )
