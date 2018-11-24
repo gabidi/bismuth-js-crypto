@@ -6,5 +6,5 @@ const generate = require('./generate')
 exports.generate = generate
 const entropy = require('./entropy')
 exports.entropy = entropy
-const browserEntropy = require('./browser_crypto')
-exports.browserEntropy = browserEntropy
+//const browserEntropy = require('./browser_crypto')
+//exports.browserEntropy = browserEntropy
