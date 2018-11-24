@@ -3,25 +3,7 @@ const { expect } = require('chai')
 const testVectors1 = require('./test_vectors.json')
 const testVectors2 = require('./test_vectors2.json')
 const testWallet = require('./testWallet.json')
-
-const formatTxn = ({
-  timestamp,
-  address,
-  recipient,
-  amount,
-  openfield,
-  operation
-}) =>
-  `(${[
-    timestamp.toFixed(2),
-    address,
-    recipient,
-    parseFloat(amount).toFixed(8),
-    operation,
-    openfield
-  ]
-    .map(x => `'${x}'`)
-    .join(', ')})`
+const { getSignedTxnBase64, formatTxn } = require('../sign')
 it('Should be able to read a public and private key from der (pem format)', async () => {
   const { PrivateKey, PublicKey } = testWallet
 
@@ -78,10 +60,8 @@ it('Should be able to format and stringify a txn', async () => {
   )
 })
 it('Should be able to sign a transcation string and check its signature', async () => {
-  const { PrivateKey, PublicKey } = testWallet
-  const { sign } = forge.pki.privateKeyFromPem(PrivateKey)
-  const { verify } = forge.pki.publicKeyFromPem(PublicKey)
-  testVectors2.forEach(
+  const { PrivateKey, PublicKey } = testWallet;
+  [...testVectors1, ...testVectors2].forEach(
     ({
       tx_to_sign: {
         timestamp,
@@ -94,21 +74,20 @@ it('Should be able to sign a transcation string and check its signature', async 
       signature_b64: signatureB64,
       pubkey_b64: publicKeyB64
     }) => {
-      const formatedTxn = formatTxn({
-        timestamp,
-        address,
-        recipient,
-        amount,
-        operation,
-        openfield
+      const base64SignedTxn = getSignedTxnBase64({
+        formatedTxnString: formatTxn({
+          timestamp,
+          address,
+          recipient,
+          amount,
+          operation,
+          openfield
+        }),
+        pemPublicKey: PublicKey,
+        pemPrivateKey: PrivateKey
       })
-      const md = forge.md.sha1.create()
-      md.update(formatedTxn, 'utf8')
-      const signature = sign(md)
-      expect(verify(md.digest().bytes(), signature, 'RSASSA-PKCS1-V1_5')).to.be
-        .true
-      expect(signatureB64).to.equal(forge.util.encode64(signature))
+      expect(signatureB64).to.equal(base64SignedTxn)
       expect(Buffer.from(PublicKey).toString('base64')).to.equal(publicKeyB64)
     }
   )
-})
+}).timeout(170000)
