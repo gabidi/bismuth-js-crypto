@@ -91,7 +91,6 @@ it('Should be able to sign a transcation string and check its signature', async 
         operation,
         openfield
       },
-      as_string: asString,
       signature_b64: signatureB64,
       pubkey_b64: publicKeyB64
     }) => {
@@ -106,8 +105,9 @@ it('Should be able to sign a transcation string and check its signature', async 
       const md = forge.md.sha1.create()
       md.update(formatedTxn, 'utf8')
       const signature = sign(md)
-      expect(verify(md.digest().bytes(), signature)).to.be.true
-      expect(Buffer.from(signature).toString('base64')).to.equal(signatureB64)
+      expect(verify(md.digest().bytes(), signature, 'RSASSA-PKCS1-V1_5')).to.be
+        .true
+      expect(signatureB64).to.equal(forge.util.encode64(signature))
       expect(Buffer.from(PublicKey).toString('base64')).to.equal(publicKeyB64)
     }
   )
