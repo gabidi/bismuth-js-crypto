@@ -1,6 +1,6 @@
 const sha256 = require('sha256')
-const _secureRandom = require('./lib/secureRandom')
-const { util } = require('./lib/cryptoUtils')()
+const _secureRandom = require('../lib/secureRandom')
+const { util } = require('../lib/cryptoUtils')()
 module.exports = ({
   entropySeedString = '',
   secureRandom = _secureRandom({ entropyStr: entropySeedString })

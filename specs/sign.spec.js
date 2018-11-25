@@ -3,7 +3,7 @@ const { expect } = require('chai')
 const testVectors1 = require('./test_vectors.json')
 const testVectors2 = require('./test_vectors2.json')
 const testWallet = require('./testWallet.json')
-const { getSignedTxnBase64, formatTxn } = require('../sign')
+const { getSignedTxnBase64, formatTxn } = require('../src/sign')
 it('Should be able to read a public and private key from der (pem format)', async () => {
   const { PrivateKey, PublicKey } = testWallet
 

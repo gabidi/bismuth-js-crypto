@@ -1,5 +1,5 @@
 const bip39 = require('bip39')
-const _arc4 = require('./lib/arc4')
+const _arc4 = require('../lib/arc4')
 module.exports = {
   makeMnemonicFromEntropySha (entropySha) {
     return bip39.entropyToMnemonic(entropySha.slice(32))

@@ -1,6 +1,6 @@
 const forge = require('node-forge')
-const { sha224 } = require('./lib/cryptoUtils')()
-const _arc4 = require('./lib/arc4')
+const { sha224 } = require('../lib/cryptoUtils')()
+const _arc4 = require('../lib/arc4')
 module.exports = ({
   prng = _arc4(),
   generateKeyPair = forge.pki.rsa.generateKeyPair
