@@ -1,6 +1,6 @@
 {
   "name": "bismuth-js-crypto",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "",
   "main": "browser_crypto.js",
   "directories": {
