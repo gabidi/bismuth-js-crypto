@@ -5,8 +5,10 @@ const _seed = require('../src/seed')
 const _generate = require('../src/generate')
 const bip39 = require('bip39')
 const forge = require('node-forge')
+const { sha224 } = require('../lib/cryptoUtils')()
 const { expect } = require('chai')
 const { spy } = require('sinon')
+const testWallet = require('./testWallet.json')
 it('BIP 39 should generates the same seed/12 word seed result as python', async () => {
   [
     {
@@ -33,6 +35,10 @@ it('BIP 39 should generates the same seed/12 word seed result as python', async 
       entropy
     )
   })
+})
+it('Should be able to SHA224 a public key to get an address (like python)', async () => {
+  const { PublicKey, Address } = testWallet
+  expect(sha224(PublicKey)).to.equal(Address)
 })
 it('Should be able to generate entropy using user data', async () => {
   const secureRandom = _secureRandom({
@@ -67,7 +73,6 @@ it('Should be able to make a mnemonic seed from entropy', async () => {
   expect(prng.nextBytesAsString()).to.be.a('String')
 })
 it('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it', async () => {
-  console.time('startOfTest')
   const { twelveWords } = {
     index: 0,
     entropy: '3b13f9cb9ddea905883fa8d3ff7b1247',
@@ -87,8 +92,7 @@ it('Should be able to take an mnemonic seed and make an RSA key and BIS address 
   expect(arc4SpyNext.callCount).to.equal(300)
   const [
     { publicKey: pubk1, privateKey: prvk1, address: add1 }
-  ] = await Promise.all([gen1({ bits: 4096})])
-  console.timeEnd('startOfTest')
+  ] = await Promise.all([gen1({ bits: 4096 })])
   // expect(rsaSpy.called).to.be.true
   expect(arc4SpyNextBytesAsString.called).to.be.true
   expect(prvk1).to.contain('BEGIN RSA PRIVATE KEY')
