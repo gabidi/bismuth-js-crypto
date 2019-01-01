@@ -21,9 +21,9 @@ module.exports = ({
         (err, key) => (err ? rej(err) : res(key))
       )
     })
-    const pemPublic = forge.pki.publicKeyToPem(publicKey).replace('\r\n', '\n')
+    const pemPublic = forge.pki.publicKeyToPem(publicKey).replace(/\r\n/g, '\n')
     return {
-      privateKey: forge.pki.privateKeyToPem(privateKey).replace('\r\n', '\n'),
+      privateKey: forge.pki.privateKeyToPem(privateKey).replace(/\r\n/g, '\n'),
       publicKey: pemPublic,
       address: sha224(pemPublic)
     }
