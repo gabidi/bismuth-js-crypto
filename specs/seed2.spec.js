@@ -9,6 +9,7 @@ const { sha224 } = require('../lib/cryptoUtils')()
 const { expect } = require('chai')
 const { spy } = require('sinon')
 const testWallet = require('./testWallet.json')
+
 it('BIP 39 should generates the same seed/12 word seed result as python', async () => {
   [
     {
