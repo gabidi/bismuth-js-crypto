@@ -9,7 +9,7 @@ const { sha224 } = require('../lib/cryptoUtils')()
 const { expect } = require('chai')
 const { spy } = require('sinon')
 const testWallet = require('./testWallet.json')
-
+const testWallet2 = require('/home/gus/Downloads/cf2254c94778c427265482423f1367877411bfffbbc9bebe1bc60b1a-keys.json');
 it('BIP 39 should generates the same seed/12 word seed result as python', async () => {
   [
     {
@@ -40,6 +40,7 @@ it('BIP 39 should generates the same seed/12 word seed result as python', async 
 it('Should be able to SHA224 a public key to get an address (like python)', async () => {
   const { PublicKey, Address } = testWallet
   expect(sha224(PublicKey)).to.equal(Address)
+	console.log(sha224(testWallet2.PublicKey),sha224(testWallet2.PublicKey.replace(/\r\n/g,'\n')))
 })
 it('Should be able to generate entropy using user data', async () => {
   const secureRandom = _secureRandom({
