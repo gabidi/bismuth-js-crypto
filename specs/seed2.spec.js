@@ -9,6 +9,8 @@ const { sha224 } = require('../lib/cryptoUtils')()
 const { expect } = require('chai')
 const { spy } = require('sinon')
 const testWallet = require('./testWallet.json')
+const testKeys = require('./testKeys')
+const fs = require('fs')
 it('BIP 39 should generates the same seed/12 word seed result as python', async () => {
   [
     {
@@ -36,11 +38,11 @@ it('BIP 39 should generates the same seed/12 word seed result as python', async 
     )
   })
 })
-xit('Should be able to SHA224 a public key to get an address (like python)', async () => {
+it('Should be able to SHA224 a public key to get an address (like python)', async () => {
   const { PublicKey, Address } = testWallet
   expect(sha224(PublicKey)).to.equal(Address)
 })
-xit('Should be able to generate entropy using user data', async () => {
+it('Should be able to generate entropy using user data', async () => {
   const secureRandom = _secureRandom({
     entropyStr: 'test',
     crypto
@@ -62,7 +64,7 @@ xit('Should be able to generate entropy using user data', async () => {
   expect(entropySha.length).to.be.equal(64)
 }).timeout(30000)
 
-xit('Should be able to make a mnemonic seed from entropy', async () => {
+it('Should be able to make a mnemonic seed from entropy', async () => {
   // HERE make seed.js FIXE take slice32from sha
   const entropySha =
     'd4f5e041a28182e9dbd810fee3375cfbd89bd137dbf95adb68087cf3198b780a'
@@ -72,66 +74,48 @@ xit('Should be able to make a mnemonic seed from entropy', async () => {
   expect(prng.next()).to.be.a('Number')
   expect(prng.nextBytesAsString()).to.be.a('String')
 })
-xit('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it (multi-threaded)', async () => {
-  const { twelveWords } = {
-    index: 0,
-    entropy: '3b13f9cb9ddea905883fa8d3ff7b1247',
-    twelvewords:
-      'deposit panther indicate desert tunnel lizard can vital stadium wink setup moment'
-  }
+it('Should be able to take an mnemonic seed and make an RSA key and BIS address out of it (multi-threaded)', async () => {
+  const twelveWords =
+    'deposit panther indicate desert tunnel lizard can vital stadium wink setup moment'
   const prng = _seed.makeSeededPrngFromMneomic(twelveWords, 'mypass')
   const arc4SpyNextBytesAsString = spy(prng, 'nextBytesAsString')
   const arc4SpyNext = spy(prng, 'next')
   const generateKeyPair = forge.pki.rsa.generateKeyPair
   const rsaSpy = spy(generateKeyPair)
-  const { generateKeys: gen1 } = _generate({
+  const { generateKeys } = _generate({
     prng,
-    generateKeyPair
+    generateKeyPair: rsaSpy,
+    workers: -1
   })
   // prng should be primed on init
   expect(arc4SpyNext.callCount).to.equal(300)
-  const [
-    { publicKey: pubk1, privateKey: prvk1, address: add1 }
-  ] = await Promise.all([gen1({ bits: 4096 })])
-  // expect(rsaSpy.called).to.be.true
+  const { publicKey, privateKey, address } = await generateKeys({ bits: 4096 })
+  expect(rsaSpy.called).to.be.true
   expect(arc4SpyNextBytesAsString.called).to.be.true
-  expect(prvk1).to.contain('BEGIN RSA PRIVATE KEY')
-  expect(pubk1).to.contain('BEGIN PUBLIC KEY')
-  expect(add1.length).to.equal(56)
-  return add1
+  expect(privateKey).to.contain('BEGIN RSA PRIVATE KEY')
+  expect(publicKey).to.contain('BEGIN PUBLIC KEY')
+  expect(address.length).to.equal(56)
+  return address
 }).timeout(1760000)
 it('Should be able to make deterministic keys (single thread) from 12 seed + pass', async () => {
-  const { twelveWords } = {
-    index: 0,
-    entropy: '3b13f9cb9ddea905883fa8d3ff7b1247',
-    twelvewords:
-      'deposit panther indicate desert tunnel lizard can vital stadium wink setup moment'
-  }
-  const prng = _seed.makeSeededPrngFromMneomic(twelveWords, 'mypass')
+  const prng = _seed.makeSeededPrngFromMneomic(testKeys.twelveWords, 'mypass')
   const arc4SpyNext = spy(prng, 'next')
-  const { generateKeysInSteps: gen1 } = _generate({
+  const { generateKeysInSteps } = _generate({
     prng
   })
   // prng should be primed on init
   expect(arc4SpyNext.callCount).to.equal(300)
-  const { publicKey: pub1, privateKey: priv1, address: add1 } = await gen1({ bits: 4096 })
-  // expect(rsaSpy.called).to.be.true
-  // expect(arc4SpyNextBytesAsString.called).to.be.true
-  expect(priv1).to.contain('BEGIN RSA PRIVATE KEY')
-  expect(pub1).to.contain('BEGIN PUBLIC KEY')
-  expect(add1.length).to.equal(56)
-  // Now run it again with same seed , keys should be same
-  const prng2 = _seed.makeSeededPrngFromMneomic(twelveWords, 'mypass')
-  const { generateKeysInSteps: gen2 } = _generate({
-    prng2
+  const { publicKey, privateKey, address } = await generateKeysInSteps({
+    bits: 4096
   })
-  const { publicKey: pub2, privateKey: priv2, address: add2 } = await gen2({ bits: 4096 })
-  // expect(rsaSpy.called).to.be.true
-  // expect(arc4SpyNextBytesAsString.called).to.be.true
-  expect(priv2).to.contain('BEGIN RSA PRIVATE KEY')
-  expect(pub2).to.contain('BEGIN PUBLIC KEY')
-  expect(add2.length).to.equal(56)
-  expect(pub2).to.equal(pub1)
-  expect(priv2).to.equal(priv1)
-  expect(add2).to.equal(add1)
+  expect(privateKey).to.contain('BEGIN RSA PRIVATE KEY')
+  expect(publicKey).to.contain('BEGIN PUBLIC KEY')
+  expect(address.length).to.equal(56)
+  // fs.writeFileSync(
+  //  './testKeys.json',
+  //  JSON.stringify({ publicKey, privateKey, address })
+  // )
+  expect(publicKey).to.equal(testKeys.publicKey)
+  expect(privateKey).to.equal(testKeys.privateKey)
+  expect(address).to.equal(testKeys.address)
 }).timeout(1760000)
