@@ -8,20 +8,22 @@ module.exports = ({
   // prime prng by desposing first 300
   for (let i = 1; i <= 300; i++) prng.next()
 
-  const generateKeys = async ({ bits = 4096 } = {}) => {
+  const generateKeys = async ({ bits = 4096, workers = 1 } = {}) => {
     const { privateKey, publicKey } = await new Promise((res, rej) => {
       generateKeyPair(
         {
           prng: {
             getBytesSync: prng.nextBytesAsString
           },
-          bits
-          //  workers: 4
+          bits,
+          workers
         },
         (err, key) => (err ? rej(err) : res(key))
       )
     })
-    const pemPublic = forge.pki.publicKeyToPem(publicKey).replace(/\r\n/g, '\n')
+    const pemPublic = forge.pki
+      .publicKeyToPem(publicKey)
+      .replace(/\r\n/g, '\n')
     return {
       privateKey: forge.pki.privateKeyToPem(privateKey).replace(/\r\n/g, '\n'),
       publicKey: pemPublic,
@@ -40,9 +42,13 @@ module.exports = ({
         } else {
           clearTimeout(rsaStepTimeout)
           const { publicKey, privateKey } = state.keys
-          const pemPublic = forge.pki.publicKeyToPem(publicKey).replace(/\r\n/g, '\n')
+          const pemPublic = forge.pki
+            .publicKeyToPem(publicKey)
+            .replace(/\r\n/g, '\n')
           res({
-            privateKey: forge.pki.privateKeyToPem(privateKey).replace(/\r\n/g, '\n'),
+            privateKey: forge.pki
+              .privateKeyToPem(privateKey)
+              .replace(/\r\n/g, '\n'),
             publicKey: pemPublic,
             address: sha224(pemPublic)
           })
