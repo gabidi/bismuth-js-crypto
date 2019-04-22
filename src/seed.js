@@ -6,7 +6,7 @@ module.exports = {
   },
   makeSeededPrngFromMneomic (twelveWords, passphrase = null) {
     //  mix with user passphrase /salet
-    const mnemonic = twelveWords + passphrase ? ` ${passphrase}` : ''
+    const mnemonic = twelveWords + (passphrase ? ` ${passphrase}` : '')
     const arc4Seed = bip39.mnemonicToSeed(mnemonic)
     //  feed RC4 as generator function to RSA
     const prng = _arc4()
